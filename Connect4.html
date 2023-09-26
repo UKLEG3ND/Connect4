@@ -1,0 +1,265 @@
+<html>
+<head>
+    <title>Connect 4</title>
+    <style>
+        
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: lightgoldenrodyellow;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(7, 50px);
+            gap: 5px;
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #000;
+            background-color: #fff;
+            cursor: pointer;
+        }
+
+        .player1 {
+            background-color: #ffcc00; /* Yellow */
+        }
+
+        .player2 {
+            background-color: #ff3333; /* Red */
+        }
+
+        .message {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .play-again-button {
+            margin-top: 20px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .balloon {
+            width: 30px;
+            height: 40px;
+            background-color: #FF5733;
+            border-radius: 50%;
+            position: absolute;
+            animation-name: float;
+            animation-duration: 0.30s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Connect 4</h1>
+
+    <div class="instructions">
+        <p>Connect 4 is a two-player connection game in which the players choose a color and then take turns dropping colored discs from the top into a grid.</p>
+        <p>The objective of the game is to be the first to form a horizontal, vertical, or diagonal line of four of one's own discs.</p>
+        <p>Enter the names of both players, click "Start Game" to begin, and take turns clicking on the columns to drop your colored discs.</p>
+        <p>Enjoy the game!</p>
+    </div>
+    <div class="player-names">
+        <input type="text" id="player1-name" placeholder="Enter Red Player's Name">
+        <input type="text" id="player2-name" placeholder="Enter Yellow Player's Name">
+        <button id="start-button">Start Game</button>
+    </div>
+    <div class="turn-message" id="turn-message" style="display: none;"></div>
+    <div class="board" id="board" style="display: none;"></div>
+    <div class="message" id="message"></div>
+    <button class="play-again-button" id="play-again-button" style="display: none;">Play Again</button>
+    <button class="change-name-button" id="change-name-button" style="display: none;">Change Name</button> <!-- New button for changing names -->
+    <script>
+        const rows = 6;
+        const columns = 7;
+        const board = document.getElementById('board');
+        const message = document.getElementById('message');
+        const playAgainButton = document.getElementById('play-again-button');
+        const player1NameInput = document.getElementById('player1-name');
+        const player2NameInput = document.getElementById('player2-name');
+        const turnMessage = document.getElementById('turn-message');
+        const startButton = document.getElementById('start-button');
+        const changeNameButton = document.getElementById('change-name-button'); // Added the button element
+        let currentPlayer = 'player1';
+        let gameOver = false;
+        const boardState = Array.from({ length: columns }, () => Array(rows).fill(null));
+
+        const createCell = (row, col) => {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.dataset.row = row;
+            cell.dataset.col = col;
+            cell.addEventListener('click', () => handleCellClick(col));
+            return cell;
+        };
+
+        const createBoard = () => {
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < columns; col++) {
+                    board.appendChild(createCell(row, col));
+                }
+            }
+        };
+
+        const checkWin = (row, col) => {
+            const directions = [
+                [0, 1], [1, 0], [1, 1], [1, -1]
+            ];
+
+            for (const [dx, dy] of directions) {
+                let count = 0;
+                let newRow = row;
+                let newCol = col;
+
+                while (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < columns &&
+                    boardState[newCol][newRow] === currentPlayer) {
+                    count++;
+                    newRow += dx;
+                    newCol += dy;
+                }
+
+                newRow = row - dx;
+                newCol = col - dy;
+
+                while (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < columns &&
+                    boardState[newCol][newRow] === currentPlayer) {
+                    count++;
+                    newRow -= dx;
+                    newCol -= dy;
+                }
+
+                if (count >= 4) return true;
+            }
+
+            return false;
+        };
+
+        const checkDraw = () => {
+            for (let col = 0; col < columns; col++) {
+                if (!boardState[col][0]) {
+                    return false;
+                }
+            }
+            return true;
+        };
+
+        const handleCellClick = (col) => {
+            if (gameOver) return;
+
+            for (let row = rows - 1; row >= 0; row--) {
+                if (!boardState[col][row]) {
+                    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                    cell.classList.add(currentPlayer);
+                    boardState[col][row] = currentPlayer;
+
+                    if (checkWin(row, col)) {
+                        message.textContent = `${currentPlayer === 'player1' ? player1NameInput.value : player2NameInput.value} wins!`;
+                        playAgainButton.style.display = 'block';
+                        gameOver = true;
+                        showBalloons(); // Show balloons when a player wins
+                        changeNameButton.style.display = 'block'; // Show the "Change Name" button
+                    } else
+                    if (checkDraw()) {
+                        message.textContent = "It's a draw!";
+                        playAgainButton.style.display = 'block';
+                        gameOver = true;
+                        changeNameButton.style.display = 'block'; // Show the "Change Name" button
+                    } else {
+                        currentPlayer = currentPlayer === 'player1' ? 'player2' : 'player1';
+                        turnMessage.textContent = `Turn: ${currentPlayer === 'player1' ? player1NameInput.value : player2NameInput.value}`;
+                    }
+                    break;
+                }
+            }
+        };
+
+        const createBalloon = () => {
+            const balloon = document.createElement('div');
+            balloon.classList.add('balloon');
+            return balloon;
+        };
+
+        const showBalloons = () => {
+            const balloonsContainer = document.createElement('div');
+            balloonsContainer.classList.add('balloons-container');
+
+            for (let i = 0; i < 10; i++) {
+                const balloon = createBalloon();
+                balloon.style.left = `${Math.random() * 100}%`;
+                balloonsContainer.appendChild(balloon);
+            }
+
+            document.body.appendChild(balloonsContainer);
+
+            setTimeout(() => {
+                document.body.removeChild(balloonsContainer);
+            }, 500);
+            setTimeout(() => {
+                document.body.removeChild(balloonsContainer);
+            }, 5000); // Adjust the duration as needed
+        };
+
+        playAgainButton.addEventListener('click', () => {
+            // Reset the game
+            boardState.forEach(column => column.fill(null));
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                cell.classList.remove('player1', 'player2');
+            });
+            message.textContent = '';
+            playAgainButton.style.display = 'none';
+            currentPlayer = 'player1';
+            gameOver = false;
+            turnMessage.textContent = `Turn: ${player1NameInput.value}`;
+            changeNameButton.style.display = 'none'; // Hide the "Change Name" button
+        });
+
+        startButton.addEventListener('click', () => {
+            // Check if both player names are entered before starting the game
+            const player1Name = player1NameInput.value.trim();
+            const player2Name = player2NameInput.value.trim();
+
+            if (player1Name && player2Name) {
+                player1NameInput.disabled = true;
+                player2NameInput.disabled = true;
+                startButton.style.display = 'none';
+                turnMessage.style.display = 'block';
+                board.style.display = 'grid';
+                turnMessage.textContent = `Turn: ${player1Name}`;
+            }
+        });
+
+        changeNameButton.addEventListener('click', () => {
+            player1NameInput.disabled = false;
+            player2NameInput.disabled = false;
+            startButton.style.display = 'block';
+            changeNameButton.style.display = 'none';
+        });
+
+        createBoard();
+    </script>
+</body>
+</html>
